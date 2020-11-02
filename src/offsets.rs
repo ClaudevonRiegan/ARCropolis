@@ -1,4 +1,4 @@
-use skyline::hooks::{getRegionAddress, Region};
+// use skyline::hooks::{getRegionAddress, Region};
 
 // default 9.0.1 offsets
 pub static mut LOOKUP_STREAM_HASH_OFFSET: usize = 0x335a350;
@@ -20,11 +20,11 @@ pub static mut PARSE_MODEL_XMB_2_OFFSET:usize = 0x3406f44;
 pub static mut TITLE_SCREEN_VERSION_OFFSET:usize = 0x35ba960;
 pub static mut PARSE_NUS3BANK_FILE_OFFSET:usize = 0x35528f4;
 
-fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
-    haystack
-        .windows(needle.len())
-        .position(|window| window == needle)
-}
+// fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+//     haystack
+//         .windows(needle.len())
+//         .position(|window| window == needle)
+// }
 
 macro_rules! find_offsets {
     (
