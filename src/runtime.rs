@@ -264,7 +264,7 @@ impl LoadedArcEx for LoadedArc {
 
             let mut filedata = self.get_file_data_mut(info, region);
 
-            context.orig_subfile = filedata.clone();
+            context.orig_subfile = *filedata;
     
             if filedata.decomp_size < context.file.len() { 
                 filedata.decomp_size = context.file.len();

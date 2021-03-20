@@ -10,9 +10,7 @@ use owo_colors::OwoColorize;
 use smash_arc::{ArcLookup, FileData, FileDataFlags, FileInfoIndiceIdx, Hash40};
 
 use runtime::{
-    LoadedArcEx,
     LoadedTables,
-    ResServiceState
 };
 
 use log::warn;
@@ -84,7 +82,7 @@ macro_rules! get_from_file_info_indice_index {
 
 impl ModFiles {
     fn new() -> Self {
-        let mut instance = Self(HashMap::new());
+        let instance = Self(HashMap::new());
 
         let config = CONFIG.read();
         
@@ -115,32 +113,34 @@ impl ModFiles {
         instance
     }
 
-    fn process_mods(modpacks: &Vec<Modpack>) {
+    fn process_mods(modpacks: &[Modpack]) {
         let user_region = smash_arc::Region::from(get_region_id(CONFIG.read().misc.region.as_ref().unwrap()).unwrap() + 1);
 
         // TODO: Read the info.toml for every Mod instance if it exists, store the priority and then sort the vector
         println!("Starting to iterate");
 
-        modpacks.iter().map(|modpack| {
-            modpack.mods.iter().filter_map(|modpath| {
+
+        let _cunt: Vec<(FileIndex, FileCtx)> = modpacks.iter().map(|modpack| {
+            let cock = modpack.merge();
+            cock.iter().filter_map(|(hash, modfile)| {
                 // Use a FileCtx until the system is fully reworked
                 let mut filectx = FileCtx::new();
-                let hash = modpath.hash40().unwrap();
-                let modfile = ModFile::new(modpack.path().join(modpath.path()));
+                //let hash = modpath.hash40().unwrap();
+                //let modfile = ModFile::new(modpack.path().join(modpath.path()));
+                println!("{}", modfile.path().display());
 
-                match modpath.is_stream() {
-                    true => {
-                        filectx.file = modfile;
-                        filectx.hash = hash;
+                if modfile.is_stream() {
+                        filectx.file = modfile.clone();
+                        filectx.hash = *hash;
 
                         warn!("[ARC::Patching] File '{}' added as a Stream", filectx.file.path().display().bright_yellow());
                         Some((FileIndex::Stream(filectx.hash), filectx))
                     }
-                    false => {
+                    else {
                         let arc = LoadedTables::get_arc_mut();
 
                         // Does the file exist in the FilePath table? If not, discard it.
-                        match arc.get_file_path_index_from_hash(hash) {
+                        match arc.get_file_path_index_from_hash(*hash) {
                             Ok(index) => {
                                 let file_info = arc.get_file_info_from_path_index(index);
 
@@ -161,39 +161,20 @@ impl ModFiles {
                                     }
                                 }
 
-                                filectx.file = modfile;
-                                filectx.hash = hash;
+                                filectx.file = modfile.clone();
+                                filectx.hash = *hash;
                                 filectx.index = file_info.file_info_indice_index;
                         
                                 Some((FileIndex::Regular(filectx.index), filectx))
                             },
                             Err(_) => {
-                                warn!("[ARC::Patching] File '{}' was not found in data.arc", modpath.as_smash_path().display().bright_yellow());
+                                warn!("[ARC::Patching] File '{}' was not found in data.arc", modfile.as_smash_path().display().bright_yellow());
                                 None
                             },
                         }
                     }
-                }
             }).collect::<Vec<(FileIndex, FileCtx)>>()
-        }).flatten().for_each(|(index, mut context)| {
-            let arc = LoadedTables::get_arc_mut();
-            let mut mod_files = MOD_FILES.write();
-
-            // Check if it's already inserted so we don't try patching the file multiple times
-            match mod_files.0.get(&index) {
-                Some(_) => return,
-                None => {
-                    match index {
-                        FileIndex::Regular(_) => {
-                            arc.patch_filedata(&mut context);
-                        }
-                        _ => {},
-                    }
-
-                    mod_files.0.insert(index, context);
-                }
-            }
-        });
+        }).flatten().collect();
     }
 
     pub fn get(&self, file_index: FileIndex) -> Option<&FileCtx> {

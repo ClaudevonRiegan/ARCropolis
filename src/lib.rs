@@ -88,7 +88,7 @@ fn replace_file_by_index(file_index: FileIndex) {
 
         unsafe {
             let mut data_slice = std::slice::from_raw_parts_mut(table2entry.data as *mut u8, file_slice.len());
-            data_slice.write(&file_slice).unwrap();
+            data_slice.write_all(&file_slice).unwrap();
         }
     }
 }
@@ -109,7 +109,7 @@ fn replace_textures_by_index(file_ctx: &FileCtx, table2entry: &mut Table2Entry) 
         data_slice[orig_size - 0xB0..orig_size].copy_from_slice(&file_slice[file_slice.len() - 0xB0..file_slice.len()]);
     } else {
         let mut data_slice = unsafe { std::slice::from_raw_parts_mut(table2entry.data as *mut u8, file_ctx.file.len() as _) };
-        data_slice.write(&file_slice).unwrap();
+        data_slice.write_all(&file_slice).unwrap();
     }
 }
 
@@ -238,7 +238,7 @@ unsafe fn manual_hook(page_path: *const u8, unk2: *const u8, unk3: *const u64, u
     } else if original_page.contains("contents.htdocs/howto/html/") {
         if original_page.ends_with("index.html") {
             //menus::show_arcadia();
-            false
+            true
         } else {
             false
         }
@@ -246,7 +246,7 @@ unsafe fn manual_hook(page_path: *const u8, unk2: *const u8, unk3: *const u64, u
         false
     };
 
-    if is_manual != true {
+    if !is_manual {
         original!()(page_path, unk2, unk3, unk4)
     }
 }

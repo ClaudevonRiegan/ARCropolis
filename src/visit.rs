@@ -26,7 +26,7 @@ impl Modpack {
         &self.path
     }
 
-    pub fn append(&mut self, modpaths: Vec<Modpath>) {
+    pub fn append(&mut self, modpaths: &[Modpath]) {
         self.mods = modpaths
         .iter()
         .map(|filepath| {
@@ -99,7 +99,7 @@ impl From<Modpath> for ModFile {
 
 impl Modpath {
     pub fn path(&self) -> PathBuf {
-        self.0.to_owned()
+        self.0.clone()
     }
 
     pub fn hash40(&self) -> Result<Hash40, String> {
@@ -108,18 +108,18 @@ impl Modpath {
         match smash_path.to_str() {
             Some(path) => Ok(Hash40::from(path)),
             // TODO: Replace this by a proper error. This-error or something else.
-            None => Err(String::from(format!("Couldn't convert {} to a &str", self.path().display()))),
+            None => Err(format!("Couldn't convert {} to a &str", self.path().display())),
         }
     }
 
     pub fn as_smash_path(&self) -> PathBuf {
         let mut arc_path = self.0.to_str().unwrap().to_string();
 
-        if let Some(_) = arc_path.find(";") {
+        if arc_path.find(';').is_some() {
             arc_path = arc_path.replace(";", ":");
         }
 
-        if let Some(regional_marker) = arc_path.find("+") {
+        if let Some(regional_marker) = arc_path.find('+') {
             arc_path.replace_range(regional_marker..regional_marker + 6, "");
         }
 
@@ -150,7 +150,7 @@ impl ModFile {
     }
 
     pub fn path(&self) -> PathBuf {
-        self.0.to_owned()
+        self.0.clone()
     }
 
     pub fn set_path<P: AsRef<Path>>(&mut self, new_path: P) {
@@ -160,11 +160,11 @@ impl ModFile {
     pub fn as_smash_path(&self) -> PathBuf {
         let mut arc_path = self.path().to_str().unwrap().to_string();
 
-        if let Some(_) = arc_path.find(";") {
+        if arc_path.find(';').is_some() {
             arc_path = arc_path.replace(";", ":");
         }
 
-        if let Some(regional_marker) = arc_path.find("+") {
+        if let Some(regional_marker) = arc_path.find('+') {
             arc_path.replace_range(regional_marker..regional_marker + 6, "");
         }
 
@@ -197,13 +197,11 @@ impl ModFile {
                 // Split the region identifier from the filepath
                 let filename = self.path().file_name().unwrap().to_str().unwrap().to_string();
                 // Check if the filepath it contains a + symbol
-                let region = if let Some(region_marker) = filename.find('+') {
+                if let Some(region_marker) = filename.find('+') {
                     Some(Region::from(get_region_id(&filename[region_marker + 1..region_marker + 6]).unwrap_or(0) + 1))
                 } else {
                     None
-                };
-
-                region
+                }
             },
             None => None,
         }
@@ -212,7 +210,7 @@ impl ModFile {
 
 pub fn discover(path: &Path) -> Modpack {
     let mut modpack = Modpack::new(path);
-    modpack.append(directory(&path).unwrap());
+    modpack.append(&directory(&path).unwrap());
     modpack
 }
 
@@ -231,7 +229,7 @@ pub fn umm_directories<P: AsRef<Path>>(path: &P) -> Vec<Modpack> {
         }
         
         // Skip any directory starting with a period
-        if entry.file_name().to_str().unwrap().starts_with(".") {
+        if entry.file_name().to_str().unwrap().starts_with('.') {
             continue;
         }
 
@@ -252,7 +250,7 @@ pub fn directory<P: AsRef<Path>>(path: &P) -> io::Result<Vec<Modpath>> {
 
         if entry.file_type().unwrap().is_dir() {
             match directory(&entry_path) {
-                Ok(paths) => Some(paths.into()),
+                Ok(paths) => Some(paths),
                 Err(err) => panic!(err)
             }
         } else {
