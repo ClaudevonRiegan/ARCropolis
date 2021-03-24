@@ -120,18 +120,17 @@ impl ModFiles {
         println!("Starting to iterate");
 
 
-        let _cunt: Vec<(FileIndex, FileCtx)> = modpacks.iter().map(|modpack| {
-            let cock = modpack.merge();
-            cock.iter().filter_map(|(hash, modfile)| {
+        let temp: Vec<(FileIndex, FileCtx)> = modpacks.iter().map(|modpack| {
+            modpack.mods.iter().filter_map(|modpath| {
                 // Use a FileCtx until the system is fully reworked
                 let mut filectx = FileCtx::new();
-                //let hash = modpath.hash40().unwrap();
-                //let modfile = ModFile::new(modpack.path().join(modpath.path()));
+                let hash = modpath.hash40().unwrap();
+                let modfile = ModFile::new(modpack.path().join(modpath.path()));
                 println!("{}", modfile.path().display());
 
                 if modfile.is_stream() {
                         filectx.file = modfile.clone();
-                        filectx.hash = *hash;
+                        filectx.hash = hash;
 
                         warn!("[ARC::Patching] File '{}' added as a Stream", filectx.file.path().display().bright_yellow());
                         Some((FileIndex::Stream(filectx.hash), filectx))
@@ -140,7 +139,7 @@ impl ModFiles {
                         let arc = LoadedTables::get_arc_mut();
 
                         // Does the file exist in the FilePath table? If not, discard it.
-                        match arc.get_file_path_index_from_hash(*hash) {
+                        match arc.get_file_path_index_from_hash(hash) {
                             Ok(index) => {
                                 let file_info = arc.get_file_info_from_path_index(index);
 
@@ -162,7 +161,7 @@ impl ModFiles {
                                 }
 
                                 filectx.file = modfile.clone();
-                                filectx.hash = *hash;
+                                filectx.hash = hash;
                                 filectx.index = file_info.file_info_indice_index;
                         
                                 Some((FileIndex::Regular(filectx.index), filectx))
